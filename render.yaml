@@ -7,12 +7,12 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
-      - key: GOOGLE_API_KEY
+      - key: GROQ_API_KEY
         sync: false
       - key: LLM_PROVIDER
-        value: google_genai
+        value: groq
       - key: LLM_MODEL
-        sync: false
+        value: openai/gpt-oss-120b
       - key: WEATHER_MODE
         value: live
       - key: SOP_DIR
