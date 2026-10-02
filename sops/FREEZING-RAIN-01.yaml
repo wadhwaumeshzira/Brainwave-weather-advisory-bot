@@ -1,0 +1,31 @@
+id: FREEZING-RAIN-01
+title: Freezing rain and icy roads
+category: travel
+severity: critical
+description: 'Freezing rain creates black ice, making any form of travel extremely
+  treacherous.
+
+  '
+applies_to:
+- cycling
+- driving
+- walking
+lead_with: true
+overrides_scope: true
+conditions:
+  all: []
+  any:
+  - field: weather_code
+    agg: first
+    scope: today
+    op: in
+    value:
+    - 66
+    - 67
+  n_of: null
+advice: 'Freezing rain is expected, which will lead to severe ice accumulation on
+  roads and walkways. Stay completely off the roads.
+
+  '
+facts_used:
+- weather_code

@@ -1,0 +1,55 @@
+id: HEAVY-RAIN-REGIME-01
+title: Severe heavy rain regime
+category: travel
+severity: critical
+description: 'A severe storm system with heavy rain and potentially thunderstorms.
+  High risk for all activities.
+
+  '
+applies_to:
+- '*'
+lead_with: true
+overrides_scope: true
+conditions:
+  n_of:
+    min: 2
+    of:
+    - field: precipitation_sum
+      agg: first
+      scope: today
+      op: '>='
+      value: 64.5
+    - field: weather_code
+      agg: first
+      scope: today
+      op: in
+      value:
+      - 65
+      - 82
+      - 95
+      - 96
+      - 99
+    - field: wind_gusts_10m_max
+      agg: first
+      scope: today
+      op: '>='
+      value: 50.0
+    - field: precipitation_hours
+      agg: first
+      scope: today
+      op: '>='
+      value: 10
+  any: []
+  all:
+  - field: precipitation_sum
+    agg: first
+    scope: today
+    op: '>='
+    value: 30.0
+advice: A severe heavy rain system is active. Avoid non-essential travel and outdoor
+  activity.
+facts_used:
+- precipitation_hours
+- precipitation_sum
+- wind_gusts_10m_max
+- weather_code

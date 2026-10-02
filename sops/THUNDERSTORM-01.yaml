@@ -1,0 +1,29 @@
+id: THUNDERSTORM-01
+title: Thunderstorm and lightning risk
+category: general
+severity: high
+description: 'Active thunderstorms pose a lightning strike risk in open areas.
+
+  '
+applies_to:
+- '*'
+lead_with: true
+overrides_scope: false
+conditions:
+  all: []
+  any:
+  - field: weather_code
+    agg: any_hour
+    scope: today
+    op: in
+    value:
+    - 95
+    - 96
+    - 99
+  n_of: null
+advice: 'Thunderstorms are expected. Seek shelter indoors immediately and
+  avoid open fields or tall objects due to lightning risk.
+
+  '
+facts_used:
+- weather_code

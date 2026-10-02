@@ -1,0 +1,30 @@
+id: WIND-CYCLE-01
+title: Strong wind and two-wheelers
+category: outdoor_exercise
+severity: high
+description: 'Strong gusts make cycling and riding two-wheelers unsafe and difficult
+  to control.
+
+  '
+applies_to:
+- cycling
+lead_with: false
+overrides_scope: false
+conditions:
+  all:
+  - field: wind_gusts_10m
+    agg: max
+    scope: window
+    op: '>='
+    value: 40
+  any: []
+  n_of: null
+time_window:
+  start_hour: 6
+  end_hour: 22
+advice: 'Gusts above 40 km/h make cycling a safety risk, not just a comfort issue.
+  Avoid riding today or switch to a four-wheeled vehicle.
+
+  '
+facts_used:
+- wind_gusts_10m

@@ -1,0 +1,20 @@
+# Core agent framework
+langgraph>=0.2
+langchain>=0.3
+langchain-core>=0.3
+
+# LLM providers: install all three, pick one at runtime via .env (LLM_PROVIDER)
+langchain-google-genai>=2.0
+langchain-openai>=0.2
+langchain-anthropic>=0.3
+
+# Backend
+fastapi>=0.110
+uvicorn[standard]>=0.29
+httpx>=0.27
+pydantic>=2.6
+python-dotenv>=1.0
+pyyaml>=6.0
+
+# Tests / evals
+pytest>=8.0

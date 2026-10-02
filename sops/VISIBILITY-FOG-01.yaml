@@ -1,0 +1,26 @@
+id: VISIBILITY-FOG-01
+title: Low visibility and driving
+category: travel
+severity: high
+description: 'Dense fog or low visibility conditions making road travel hazardous.
+
+  '
+applies_to:
+- driving
+lead_with: false
+overrides_scope: false
+conditions:
+  all:
+  - field: visibility
+    agg: min
+    scope: next_6h
+    op: <
+    value: 1000
+  any: []
+  n_of: null
+advice: 'Visibility is severely reduced. Delay non-essential driving, and if you must
+  drive, use fog lights and maintain a safe following distance.
+
+  '
+facts_used:
+- visibility

@@ -1,0 +1,36 @@
+id: RAIN-MODERATE-01
+title: Moderate rain advice
+category: general
+severity: low
+description: 'Standard rain conditions that require an umbrella but don''t pose severe
+  risks.
+
+  '
+applies_to:
+- commute
+- cycling
+- driving
+- general
+- walking
+lead_with: false
+overrides_scope: false
+conditions:
+  all:
+  - field: precipitation_sum
+    agg: first
+    scope: today
+    op: '>'
+    value: 2.0
+  - field: precipitation_sum
+    agg: first
+    scope: today
+    op: <
+    value: 64.5
+  any: []
+  n_of: null
+advice: 'Expect some rain today. It is safe to go out, but remember to carry an umbrella
+  or raincoat.
+
+  '
+facts_used:
+- precipitation_sum

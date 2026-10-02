@@ -1,0 +1,60 @@
+id: FUZZY-PICNIC-01
+title: Ideal Picnic Weather
+category: general
+severity: info
+description: 'Pleasant and mild conditions making it a great day for a picnic or relaxed
+  outdoor time.
+
+  '
+applies_to:
+- general
+- picnic
+- walking
+lead_with: false
+overrides_scope: false
+conditions:
+  n_of:
+    min: 2
+    of:
+    - field: temperature_2m
+      agg: mean
+      scope: window
+      op: '>='
+      value: 20
+    - field: wind_speed_10m
+      agg: max
+      scope: window
+      op: <
+      value: 15
+    - field: uv_index_max
+      agg: first
+      scope: today
+      op: <
+      value: 6
+  all:
+  - field: precipitation_sum
+    agg: sum
+    scope: today
+    op: <
+    value: 2.0
+  - field: weather_code
+    agg: max
+    scope: window
+    op: <
+    value: 51
+  any: []
+time_window:
+  start_hour: 10
+  end_hour: 17
+advice: 'The weather is highly favorable for a picnic. Enjoy the pleasant conditions
+  outside!
+
+  '
+facts_used:
+- uv_index_max
+- wind_speed_10m
+- weather_code
+- temperature_2m
+- precipitation_sum
+- precipitation_probability
+positive: true

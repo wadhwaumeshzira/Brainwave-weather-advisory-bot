@@ -1,0 +1,30 @@
+id: HEAT-STROKE-01
+title: Extreme heat for running
+category: outdoor_exercise
+severity: critical
+description: 'High apparent temperatures (heat index) drastically increase the risk
+  of heat stroke during intense cardio.
+
+  '
+applies_to:
+- running
+lead_with: false
+overrides_scope: false
+conditions:
+  all:
+  - field: apparent_temperature
+    agg: max
+    scope: window
+    op: '>='
+    value: 38.0
+  any: []
+  n_of: null
+time_window:
+  start_hour: 8
+  end_hour: 18
+advice: 'The heat index is critically high. Do not run or perform intense outdoor
+  sports during these hours to avoid heat exhaustion.
+
+  '
+facts_used:
+- apparent_temperature

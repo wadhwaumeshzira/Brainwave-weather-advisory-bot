@@ -1,0 +1,27 @@
+id: UV-HIGH-01
+title: High UV Radiation
+category: general
+severity: moderate
+description: 'High ultraviolet radiation levels during the day which can cause sunburns
+  quickly.
+
+  '
+applies_to:
+- '*'
+lead_with: false
+overrides_scope: false
+conditions:
+  all:
+  - field: uv_index_max
+    agg: first
+    scope: today
+    op: '>='
+    value: 8.0
+  any: []
+  n_of: null
+advice: 'Sun intensity is very high today. Wear sunscreen, protective clothing, and
+  limit direct sun exposure during peak afternoon hours.
+
+  '
+facts_used:
+- uv_index_max

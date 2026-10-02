@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather-Advisory Support Bot</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        #chat { border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: scroll; margin-bottom: 10px; }
+        .msg { margin-bottom: 10px; }
+        .msg.user { text-align: right; color: blue; }
+        .msg.bot { text-align: left; color: green; }
+        .cites { font-size: 0.8em; color: gray; margin-top: 5px; }
+        .error { color: red; }
+        input[type="text"] { width: 80%; padding: 5px; }
+        button { width: 15%; padding: 5px; }
+    </style>
+</head>
+<body>
+    <h2>Weather-Advisory Support Bot</h2>
+    <div id="chat"></div>
+    <div>
+        <input type="text" id="userInput" placeholder="Ask about outdoor activities..." maxlength="500">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+        const sessionId = crypto.randomUUID();
+        const chatDiv = document.getElementById('chat');
+        const inputField = document.getElementById('userInput');
+
+        inputField.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        function appendMessage(sender, text, citations = []) {
+            const div = document.createElement('div');
+            div.className = 'msg ' + sender;
+            div.textContent = text;
+            if (citations.length > 0) {
+                const citeDiv = document.createElement('div');
+                citeDiv.className = 'cites';
+                citeDiv.textContent = 'Cited SOPs: ' + citations.join(', ');
+                div.appendChild(citeDiv);
+            }
+            chatDiv.appendChild(div);
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const text = inputField.value.trim();
+            if (!text) return;
+            
+            appendMessage('user', text);
+            inputField.value = '';
+            
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId, message: text })
+                });
+                
+                if (!response.ok) {
+                    appendMessage('bot', 'Error: ' + response.statusText);
+                    return;
+                }
+                
+                const data = await response.json();
+                appendMessage('bot', data.reply, data.sop_ids);
+                
+            } catch (err) {
+                appendMessage('bot', 'Network error or server down.');
+            }
+        }
+    </script>
+</body>
+</html>

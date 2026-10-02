@@ -1,0 +1,29 @@
+id: WIND-CHILL-01
+title: Freezing wind chill
+category: vulnerable_groups
+severity: high
+description: 'Sub-zero apparent temperatures drastically increase frostbite risk.
+
+  '
+applies_to:
+- elderly_outdoor
+- general
+- kids_outdoor
+- pets
+lead_with: false
+overrides_scope: false
+conditions:
+  all:
+  - field: apparent_temperature
+    agg: min
+    scope: today
+    op: <
+    value: 0.0
+  any: []
+  n_of: null
+advice: 'The wind chill factor makes it feel below freezing. Exposed skin can suffer
+  frostbite quickly; bundle up completely if venturing outdoors.
+
+  '
+facts_used:
+- apparent_temperature

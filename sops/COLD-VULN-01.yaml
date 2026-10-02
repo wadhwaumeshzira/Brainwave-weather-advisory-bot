@@ -1,0 +1,30 @@
+id: COLD-VULN-01
+title: Cold stress for vulnerable groups
+category: vulnerable_groups
+severity: high
+description: 'Low temperatures can be dangerous for elderly individuals, young children,
+  and pets.
+
+  '
+applies_to:
+- elderly_outdoor
+- general
+- kids_outdoor
+- pets
+lead_with: false
+overrides_scope: false
+conditions:
+  all:
+  - field: temperature_2m_min
+    agg: first
+    scope: today
+    op: <=
+    value: 10.0
+  any: []
+  n_of: null
+advice: 'Temperatures are dropping to very cold levels. Keep children and elderly
+  indoors if possible, and ensure they are warmly dressed.
+
+  '
+facts_used:
+- temperature_2m_min
