@@ -11,8 +11,10 @@ from pydantic import BaseModel, Field
 
 # Startup check for API key
 provider = os.getenv("LLM_PROVIDER", "google_genai")
-if provider in ("google", "google_genai") and not (os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")):
-    raise RuntimeError(f"Missing API key for provider {provider}. Please set GOOGLE_API_KEY in .env")
+key_env_map = {"google_genai": "GOOGLE_API_KEY", "openai": "OPENAI_API_KEY", "anthropic": "ANTHROPIC_API_KEY", "groq": "GROQ_API_KEY"}
+key_env = key_env_map.get(provider, f"{provider.upper()}_API_KEY")
+if not os.getenv(key_env) and not (provider == "google_genai" and os.getenv("GEMINI_API_KEY")):
+    raise RuntimeError(f"Missing API key for provider {provider}. Please set {key_env} in .env")
 
 from app.graph import graph
 
