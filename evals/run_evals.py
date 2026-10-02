@@ -246,7 +246,7 @@ def main():
         reject_reason = final_state.get("last_validation_error", "")
         final_reply = final_state.get("reply", "")
     
-    with open("evals/RESULTS.md", "w") as f:
+    with open("evals/RESULTS.md", "w", encoding="utf-8") as f:
         f.write("# Evaluation Results\n\n")
         f.write(f"**LLM Provider**: {os.getenv('LLM_PROVIDER')} | **Model**: {os.getenv('LLM_MODEL')}\n")
         f.write(f"**Total LLM Calls**: {TOTAL_LLM_CALLS}\n\n")
