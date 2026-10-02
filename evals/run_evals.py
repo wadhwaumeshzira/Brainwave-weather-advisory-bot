@@ -195,6 +195,8 @@ def main():
                 notes_list.append(note)
             actual_sops_list.append(", ".join(actual_cited) if actual_cited else "none")
             last_reply = reply
+            import time
+            time.sleep(4)
                 
         rate = f"{passes}/{runs_count}"
         path_str = " / ".join(paths)
