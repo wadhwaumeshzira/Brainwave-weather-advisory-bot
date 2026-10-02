@@ -3,78 +3,342 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weather-Advisory Support Bot</title>
+    <title>Weather Advisory Bot</title>
     <style>
-        body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
-        #chat { border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: scroll; margin-bottom: 10px; }
-        .msg { margin-bottom: 10px; }
-        .msg.user { text-align: right; color: blue; }
-        .msg.bot { text-align: left; color: green; }
-        .cites { font-size: 0.8em; color: gray; margin-top: 5px; }
-        .error { color: red; }
-        input[type="text"] { width: 80%; padding: 5px; }
-        button { width: 15%; padding: 5px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f4f8;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 720px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a73e8, #0d47a1);
+            color: white;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .header-icon { font-size: 28px; }
+        .header-text h1 { font-size: 18px; font-weight: 600; }
+        .header-text p { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+        .status-dot {
+            width: 8px; height: 8px;
+            background: #4caf50;
+            border-radius: 50%;
+            margin-left: auto;
+            box-shadow: 0 0 0 2px rgba(76,175,80,0.3);
+        }
+
+        /* Messages area */
+        #chat {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Welcome message */
+        .welcome {
+            text-align: center;
+            color: #888;
+            font-size: 13px;
+            margin: 20px 0;
+        }
+        .welcome .suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 12px;
+        }
+        .suggestion-chip {
+            background: #e8f0fe;
+            color: #1a73e8;
+            border: 1px solid #c5d8fb;
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .suggestion-chip:hover { background: #c5d8fb; }
+
+        /* Message rows */
+        .msg-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+        }
+        .msg-row.user { flex-direction: row-reverse; }
+
+        .avatar {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .avatar.bot { background: #e8f0fe; }
+        .avatar.user { background: #1a73e8; color: white; font-size: 13px; font-weight: 600; }
+
+        .bubble {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.55;
+            word-break: break-word;
+        }
+        .bubble.bot {
+            background: #f1f3f4;
+            color: #202124;
+            border-bottom-left-radius: 4px;
+        }
+        .bubble.user {
+            background: #1a73e8;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .bubble.error {
+            background: #fce8e6;
+            color: #c5221f;
+            border-left: 3px solid #d93025;
+        }
+
+        /* SOP citations */
+        .citations {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #dadce0;
+            font-size: 11px;
+            color: #5f6368;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            align-items: center;
+        }
+        .citations-label { font-weight: 600; margin-right: 2px; }
+        .sop-tag {
+            background: #e8f0fe;
+            color: #1a73e8;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: 500;
+        }
+
+        /* Typing indicator */
+        .typing-bubble {
+            background: #f1f3f4;
+            border-radius: 18px;
+            border-bottom-left-radius: 4px;
+            padding: 14px 18px;
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+        .dot {
+            width: 7px; height: 7px;
+            background: #9aa0a6;
+            border-radius: 50%;
+            animation: bounce 1.2s infinite;
+        }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-6px); }
+        }
+
+        /* Input area */
+        .input-area {
+            padding: 14px 16px;
+            background: white;
+            border-top: 1px solid #e8eaed;
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        #userInput {
+            flex: 1;
+            border: 1.5px solid #dadce0;
+            border-radius: 24px;
+            padding: 10px 18px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        #userInput:focus { border-color: #1a73e8; }
+        #sendBtn {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 42px; height: 42px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        #sendBtn:hover { background: #1557b0; }
+        #sendBtn:disabled { background: #dadce0; cursor: not-allowed; }
+
+        .footer-note {
+            text-align: center;
+            font-size: 10px;
+            color: #aaa;
+            padding: 6px;
+        }
     </style>
 </head>
 <body>
-    <h2>Weather-Advisory Support Bot</h2>
-    <div id="chat"></div>
-    <div>
-        <input type="text" id="userInput" placeholder="Ask about outdoor activities..." maxlength="500">
-        <button onclick="sendMessage()">Send</button>
+<div class="chat-container">
+    <div class="header">
+        <div class="header-icon">⛅</div>
+        <div class="header-text">
+            <h1>Weather Advisory Bot</h1>
+            <p>Outdoor activity safety powered by live weather data</p>
+        </div>
+        <div class="status-dot" title="Online"></div>
     </div>
 
-    <script>
-        const sessionId = crypto.randomUUID();
-        const chatDiv = document.getElementById('chat');
-        const inputField = document.getElementById('userInput');
+    <div id="chat">
+        <div class="welcome">
+            <div>Ask me if it's safe to go outside for any activity 🚴🌧️</div>
+            <div class="suggestions">
+                <span class="suggestion-chip" onclick="prefill('Is it safe to cycle in Bhopal today?')">🚴 Cycling in Bhopal</span>
+                <span class="suggestion-chip" onclick="prefill('Can I drive to Delhi today?')">🚗 Drive to Delhi</span>
+                <span class="suggestion-chip" onclick="prefill('Is it safe to take my kids to the park in Mumbai?')">👦 Kids outdoor Mumbai</span>
+                <span class="suggestion-chip" onclick="prefill('Good day for a picnic in Pune?')">🧺 Picnic in Pune</span>
+            </div>
+        </div>
+    </div>
 
-        inputField.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
+    <div class="input-area">
+        <input type="text" id="userInput" placeholder="Ask about outdoor safety... (e.g. 'Is it safe to cycle in Bhopal?')" maxlength="500" autocomplete="off">
+        <button id="sendBtn" onclick="sendMessage()" title="Send">➤</button>
+    </div>
+    <div class="footer-note">Advice is based on live Open-Meteo data and written SOPs — not AI opinion.</div>
+</div>
 
-        function appendMessage(sender, text, citations = []) {
-            const div = document.createElement('div');
-            div.className = 'msg ' + sender;
-            div.textContent = text;
-            if (citations.length > 0) {
-                const citeDiv = document.createElement('div');
-                citeDiv.className = 'cites';
-                citeDiv.textContent = 'Cited SOPs: ' + citations.join(', ');
-                div.appendChild(citeDiv);
-            }
-            chatDiv.appendChild(div);
-            chatDiv.scrollTop = chatDiv.scrollHeight;
+<script>
+    const sessionId = crypto.randomUUID();
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+
+    function prefill(text) {
+        input.value = text;
+        input.focus();
+    }
+
+    function addUserBubble(text) {
+        const row = document.createElement('div');
+        row.className = 'msg-row user';
+        row.innerHTML = `
+            <div class="avatar user">You</div>
+            <div class="bubble user">${escapeHtml(text)}</div>`;
+        chat.appendChild(row);
+        scrollDown();
+    }
+
+    function addTyping() {
+        const row = document.createElement('div');
+        row.className = 'msg-row';
+        row.id = 'typing-row';
+        row.innerHTML = `
+            <div class="avatar bot">⛅</div>
+            <div class="typing-bubble"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`;
+        chat.appendChild(row);
+        scrollDown();
+    }
+
+    function removeTyping() {
+        const t = document.getElementById('typing-row');
+        if (t) t.remove();
+    }
+
+    function addBotBubble(text, sopIds, isError) {
+        const row = document.createElement('div');
+        row.className = 'msg-row';
+
+        let citationsHtml = '';
+        if (sopIds && sopIds.length > 0) {
+            const tags = sopIds.map(id => `<span class="sop-tag">${escapeHtml(id)}</span>`).join('');
+            citationsHtml = `<div class="citations"><span class="citations-label">📋 Policies checked:</span>${tags}</div>`;
         }
 
-        async function sendMessage() {
-            const text = inputField.value.trim();
-            if (!text) return;
-            
-            appendMessage('user', text);
-            inputField.value = '';
-            
-            try {
-                const response = await fetch('/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ session_id: sessionId, message: text })
-                });
-                
-                if (!response.ok) {
-                    appendMessage('bot', 'Error: ' + response.statusText);
-                    return;
-                }
-                
-                const data = await response.json();
-                appendMessage('bot', data.reply, data.sop_ids);
-                
-            } catch (err) {
-                appendMessage('bot', 'Network error or server down.');
+        row.innerHTML = `
+            <div class="avatar bot">⛅</div>
+            <div class="bubble bot ${isError ? 'error' : ''}">${escapeHtml(text)}${citationsHtml}</div>`;
+        chat.appendChild(row);
+        scrollDown();
+    }
+
+    function scrollDown() { chat.scrollTop = chat.scrollHeight; }
+
+    function escapeHtml(str) {
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    async function sendMessage() {
+        const text = input.value.trim();
+        if (!text) return;
+
+        addUserBubble(text);
+        input.value = '';
+        sendBtn.disabled = true;
+        addTyping();
+
+        try {
+            const res = await fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: sessionId, message: text })
+            });
+
+            removeTyping();
+
+            if (!res.ok) {
+                addBotBubble('Network error: ' + res.statusText, [], true);
+                return;
             }
+
+            const data = await res.json();
+            addBotBubble(data.reply, data.sop_ids || [], false);
+
+        } catch (err) {
+            removeTyping();
+            addBotBubble('Could not reach the server. Is uvicorn running?', [], true);
+        } finally {
+            sendBtn.disabled = false;
+            input.focus();
         }
-    </script>
+    }
+</script>
 </body>
 </html>
