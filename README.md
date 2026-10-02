@@ -1,33 +1,64 @@
 # Weather-Advisory Support Bot
 
-A LangGraph-based chatbot designed to answer outdoor-activity safety questions (e.g., "is it safe to cycle in Bhopal today?") using live Open-Meteo weather data. Every piece of advice provided by the bot is strictly derived from a written SOP (Standard Operating Procedure) policy file, ensuring that the business controls the safety rules, not the LLM.
+A LangGraph-based chatbot that answers outdoor-activity safety questions (e.g., *"is it safe to cycle in Bhopal today?"*) using live Open-Meteo weather data. Every piece of advice is strictly derived from a written SOP (Standard Operating Procedure) YAML file — the LLM only extracts intent and phrases the reply, never invents safety advice.
 
-## Setup and Run
+---
 
-1. **Install Dependencies**:
-   Ensure you have Python 3.11+.
-   ```bash
-   pip install -r requirements.txt
-   ```
+## Quick Setup & Run (5 minutes)
 
-2. **Environment Variables**:
-   Create a `.env` file from the example:
-   ```env
-   LLM_PROVIDER=google_genai
-   LLM_MODEL=your_model_name_here
-   GOOGLE_API_KEY=your_primary_api_key_here
-   GOOGLE_API_KEY_FALLBACK=your_fallback_api_key_here
-   LLM_MODEL_FALLBACK=your_fallback_model_name_here
-   WEATHER_MODE=live
-   SOP_DIR=sops
-   ```
-   *Note: `GOOGLE_API_KEY_FALLBACK` and `LLM_MODEL_FALLBACK` are optional. If set, any failure (e.g., rate limit) on the primary model automatically fails over to the fallback model.*
+### 1. Clone and create virtual environment
+```bash
+git clone https://github.com/wadhwaumeshzira/Brainwave-weather-advisory-bot.git
+cd Brainwave-weather-advisory-bot
 
-3. **Run the App**:
-   ```bash
-   uvicorn app.main:app --host 0.0.0.0 --port 8000
-   ```
-   Access the minimal chat UI at `http://localhost:8000`.
+python -m venv .venv
+
+# Windows
+.\.venv\Scripts\Activate.ps1
+
+# Mac/Linux
+source .venv/bin/activate
+```
+
+### 2. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Create your `.env` file
+```bash
+cp .env.example .env
+```
+Then open `.env` and fill in your API key. **Groq is recommended** (free, fastest):
+- Get a free Groq key at: https://console.groq.com/keys
+
+```env
+LLM_PROVIDER=groq
+LLM_MODEL=openai/gpt-oss-120b
+GROQ_API_KEY=your_groq_key_here
+WEATHER_MODE=live
+SOP_DIR=sops
+```
+
+### 4. Start the server
+```bash
+uvicorn app.main:app --reload
+```
+Open **http://localhost:8000** in your browser — the chat UI will appear.
+
+### 5. Run the eval suite
+```bash
+python evals/run_evals.py --runs 1
+```
+Results are written to `evals/RESULTS.md`. Use `--runs 3` for the full stochastic sweep.
+
+### 6. Run unit tests
+```bash
+pytest tests/ -v
+```
+All 54 tests should pass (no API key required — tests use mocks and fixtures).
+
+---
 
 ## Architecture: Node and Branch Diagram
 
@@ -35,6 +66,7 @@ A LangGraph-based chatbot designed to answer outdoor-activity safety questions (
 flowchart TD
     START --> parse_intent
     parse_intent -- out_of_scope --> no_coverage_reply
+    parse_intent -- llm_failed --> service_unavailable_reply
     parse_intent -- ok --> resolve_location
     
     resolve_location -- error --> honest_fallback
@@ -60,76 +92,116 @@ flowchart TD
     honest_fallback --> END
     all_clear_reply --> END
     template_reply --> END
+    service_unavailable_reply --> END
 ```
 
-## SOP Schema & Adding an 11th SOP
+---
 
-SOPs are written in YAML and loaded dynamically. To add an 11th SOP, simply drop a new YAML file into the `sops/` directory. **No code changes are required.**
+## Adding an 11th SOP (no code changes needed)
 
-**Schema**:
+Simply drop a new `.yaml` file into the `sops/` directory. The bot picks it up on restart. Example schema:
+
 ```yaml
 id: UNIQUE-ID-01
 title: Short Title
 category: outdoor_exercise
-severity: high # info | low | moderate | high | critical
-description: Plain-English intent for the semantic router.
-applies_to: [cycling, running] # Use fixed vocabulary or ["*"]
-lead_with: false # true => bypasses severity to be ranked first
-overrides_scope: false # true => triggers on any activity
+severity: high          # info | low | moderate | high | critical
+description: Plain-English intent used by the semantic router.
+applies_to: [cycling]   # fixed vocabulary list, or ["*"] for all activities
+lead_with: false        # true => ranked first regardless of severity
+overrides_scope: false  # true => triggers on any activity query
 conditions:
   all:
     - {field: wind_gusts_10m, agg: max, scope: window, op: ">=", value: 40}
   any: []
-advice: The exact text the user will see if this SOP is matched.
+  n_of: null
+advice: "The exact text shown to the user if this SOP matches."
+facts_used: [wind_gusts_10m]  # fields the reply is allowed to quote
 ```
 
-## Conflict Policy
+**Condition field scopes:**
+- `current` → from `current.*` API fields
+- `window` → hourly slice within `time_window.start_hour`–`end_hour`
+- `today` / `tomorrow` → from `daily.*` fields
+- `next_6h` → next 6 hourly slots from now
 
-If multiple SOPs trigger:
-1. They are sorted by `severity` (critical > high > moderate > low > info).
-2. SOPs marked `lead_with: true` are boosted to the very top.
-3. The LLM is instructed to lead its reply with the #1 ranked SOP, and can mention up to 2 others as "also" warnings.
-*Rationale: User safety is maximized by immediately presenting the most critical risk without omitting secondary warnings.*
+---
 
-## Code vs. LLM Responsibilities
+## Conflict Resolution Policy
 
-**Deterministic Code Decides**:
-- Geocoding and Location errors
+When multiple SOPs trigger for the same question:
+1. Sorted by `severity` (critical > high > moderate > low > info)
+2. SOPs with `lead_with: true` are boosted to rank #1
+3. The LLM leads the reply with the top SOP and mentions up to 2 more as secondary warnings
+
+*Rationale: the user's safety is best served by seeing the worst risk first without hiding secondary risks.*
+
+---
+
+## Deterministic vs LLM Split
+
+**Deterministic code decides:**
+- Geocoding and location resolution
 - Weather API fetches and failures
-- Which conditions are actually true (strict numerical evaluation against thresholds)
+- Which SOP conditions are true (strict numerical evaluation)
 - Severity ranking and conflict resolution
-- Number grounding validation and fallback templates
+- Number grounding validation (`80 == 80.0`, no tolerance)
+- Template fallback reply when LLM fails
 
-**LLM Decides Only**:
-- Extracting intent (location, activity, target day) from the user's unstructured message.
-- Semantic routing (guessing which SOPs *might* be relevant from a fixed list of IDs).
-- Phrasing and wording the final reply strictly using the provided facts and advice texts.
+**LLM decides only:**
+- Extracting intent (location, activity, target day) from free-text
+- Semantic routing — which SOP IDs *might* be relevant (recall-only, not a gate)
+- Wording the final reply using only the matched SOP advice + fetched facts
 
-## How the Validator Works
-The `validate_reply` node protects against LLM hallucinations:
-1. **Citations**: Verifies using regex that every `SOP-ID` the LLM mentions was actually matched by the deterministic evaluator.
-2. **Numbers**: Extracts all floats from the LLM's text and compares them numerically (`80 == 80.0`, no tolerance) against the exact API facts *and* the numeric thresholds written in the matched SOP advice rules. If an invented number is found, it rejects the reply.
-3. **Retry & Template**: On failure, the graph loops back for 1 retry. If it fails again, it abandons the LLM and falls back to a deterministic, code-assembled `template_reply` that guarantees safe advice delivery.
+---
 
-## Failure Behavior
-- **API Outages**: If the weather or geocoding API fails, the graph immediately shunts to an `honest_fallback` ("Sorry, I couldn't get the weather data"), never guessing safety.
-- **LLM API Fallbacks & Failures**: The system wraps LangChain's native `with_fallbacks` logic across all LLM interactions (`parse_intent`, `route_sops`, `compose_reply`). If the primary LLM model fails (e.g., 429 quota exhaustion or 500 server error), it instantly retries using the fallback model if configured. If BOTH models fail, it gracefully routes to a `service_unavailable_reply`.
-- **Out of Scope**: Triggers `no_coverage_reply` ("We don't have guidance for that").
-- **LLM Outages/Validation Failures**: Triggers the `template_reply` to stitch together the matched SOP advice lines programmatically.
+## Validator (Hallucination Guard)
 
-## How to Run Evals
-Evals run the bot through deterministic fixtures to verify rules and fallbacks.
-```bash
-python evals/run_evals.py
-```
-This generates `evals/RESULTS.md` with 3 iterations per case to ensure LLM stability.
+The `validate_reply` node runs after every LLM compose:
+1. **Citation check** — every SOP ID in the reply must be in the matched set
+2. **Number grounding** — every float in the reply must appear in the live weather facts dict OR in the matched SOP's condition thresholds. Invented or rounded numbers are rejected.
+3. **Retry + template fallback** — on failure, 1 retry. If it fails again, a deterministic code-built reply is sent instead (guaranteed safe, no hallucination).
 
-## Honest Known Gaps
-- **Synthetic Fixtures**: The `heavy_rain` and `windy` cases in the eval suite are synthetic edits of a normal day to force edge cases for deterministic testing.
-- **Live API Unasserted**: We cannot assert strict numbers on live weather eval runs since Open-Meteo forecasts fluctuate constantly; we evaluate rule triggers instead.
-- **Router is Recall-Only**: The LLM semantic router is not a safety gate. It can only *add* candidate SOPs. The evaluator checks all SOPs that match the user's activity tag regardless of the router.
-- **Latency Tradeoff**: The system uses `gemini-3.5-flash` to prioritize speed over deep-reasoning, trading conversational nuance for sub-3-second responses.
-- **Generic SOPs**: Some default SOPs are generally scoped and not heavily tuned to India-specific climate realities (e.g., IMD severity bands).
+---
 
-## Known gaps
-- **Latency**: The thinking level is currently left at the model default, which can add latency for `parse_intent` and `route_sops`; a future step would be setting a low thinking level specifically for these rapid tasks.
+## Failure Behaviour
+
+| Situation | Node | Result |
+|-----------|------|--------|
+| Location not found or geocoding error | `honest_fallback` | "Sorry, I couldn't resolve that location." |
+| Weather API down or timeout | `honest_fallback` | "Sorry, I couldn't get weather data." |
+| Question out of scope | `no_coverage_reply` | "We don't have guidance for that." |
+| No SOP matches conditions | `no_coverage_reply` | "No policy covers this today." |
+| LLM reply fails validation twice | `template_reply` | Code-built reply using matched SOP advice + facts |
+| Both primary and fallback LLM fail | `service_unavailable_reply` | "AI service temporarily unavailable." |
+
+---
+
+## Eval Suite
+
+The eval suite at `evals/run_evals.py` covers:
+
+| # | Type | What it checks |
+|---|------|----------------|
+| 1–2 | SOP clearly applies | Correct SOP cited, numbers from live API |
+| 3–4 | Paraphrased intent | Matching without keyword overlap |
+| 5 | Severe conditions | Regime SOP fires on heavy-rain fixture |
+| 6 | Conflict resolution | Both SOPs cited, regime first |
+| 7 | No SOP applies | "no guidance" reply |
+| 8 | Weather API failure | `honest_fallback` fires |
+| 9 | Location failure | `honest_fallback` fires |
+| 10 | Hinglish query | Activity correctly mapped |
+| 11 | Session memory | Follow-up reuses context |
+| 12–13 | Adversarial prompt injection | SOP-999 not cited, safety not claimed |
+| 14–16 | Additional edge cases | All-clear, validator grounding |
+
+Live weather varies — the heavy-rain cases use a synthetic fixture so the eval is deterministic regardless of today's forecast.
+
+---
+
+## Known Gaps
+
+- **Thinking latency**: Thinking level is left at model default for `parse_intent` and `route_sops`, which can add latency. A future step would be setting a low thinking budget for these rapid classification tasks.
+- **India-specific SOPs**: SOPs are not deeply tuned to IMD severity bands or regional climate patterns.
+- **Synthetic fixtures**: `heavy_rain` and `windy` evals use edited JSON fixtures to force edge cases deterministically. Live API numbers fluctuate and cannot be exactly asserted.
+- **Router is recall-only**: The LLM semantic router can only *add* candidate SOPs. The deterministic evaluator checks all activity-matching SOPs regardless of the router's output.

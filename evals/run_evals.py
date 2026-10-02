@@ -5,6 +5,9 @@ import argparse
 import yaml
 import re
 from unittest.mock import patch
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from app.graph import graph
 from langchain_core.messages import AIMessage
 
@@ -180,6 +183,9 @@ def main():
         # Deterministic cases don't need multiple runs
         if expected_path in ["all_clear_reply", "no_coverage_reply", "honest_fallback"]:
             runs_count = 1
+            
+        msg_preview = case.get("message", case.get("messages", [""])[-1])
+        print(f"-> Running Case {case['id']}: '{msg_preview[:50]}...' ({runs_count} runs)")
             
         for i in range(runs_count):
             passed, note, path, actual_cited, reply = run_case(case, expected_path)
