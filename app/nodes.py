@@ -187,8 +187,12 @@ def all_clear_reply(state: GraphState) -> GraphState:
     
     day_str = "today" if state.get("target_day") == 0 else "tomorrow"
     
-    reply = f"We checked {cands_str} for {act} in {loc} for {day_str}. None of our warning rules were triggered, but this is not a guarantee of safety.\n"
-    reply += f"Expected max conditions: Temp {t}°C, Gusts {gusts} km/h, Rain {rain}mm, UV {uv}."
+    reply = (
+        f"**No safety advisories apply for {act} in {loc} {day_str}.**\n\n"
+        f"None of our warning rules were triggered by the forecast.\n"
+        f"Expected max conditions: Temp {t}°C, Gusts {gusts} km/h, Rain {rain}mm, UV {uv}.\n\n"
+        f"*(Evaluated SOPs: {cands_str})*"
+    )
     return {"reply": reply}
 
 def compose_reply(state: GraphState) -> GraphState:
