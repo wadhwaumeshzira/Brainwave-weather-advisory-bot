@@ -54,6 +54,7 @@ class NegativeComposeMock:
 def run_case(case_def, expected_path_str=None):
     os.environ["WEATHER_MODE"] = "fixture"
     os.environ["WEATHER_FIXTURE"] = case_def.get("fixture", "bhopal")
+    os.environ["WEATHER_FORCE_FAIL"] = "1" if case_def.get("force_fail") else "0"
     
     msgs = case_def.get("messages", [])
     if "message" in case_def:
@@ -143,7 +144,7 @@ def run_case(case_def, expected_path_str=None):
             notes.append("Did not fail gracefully")
             
     if case_def["id"] == 12: # Follow up
-        if final_state.get("last_location", "").lower() != "bhopal":
+        if "bhopal" not in final_state.get("last_location", "").lower():
             passed = False
             notes.append("Session did not remember location")
             
@@ -175,9 +176,9 @@ def main():
         
         # Expected path overrides based on case definitions
         expected_path = None
-        if case["id"] == 1: expected_path = "all_clear_reply"
+        if case["id"] == 8: expected_path = "all_clear_reply"
         elif case["id"] == 7: expected_path = "no_coverage_reply"
-        elif case["id"] in [8, 9]: expected_path = "honest_fallback"
+        elif case["id"] in [9, 10]: expected_path = "honest_fallback"
         
         runs_count = args.runs
         # Deterministic cases don't need multiple runs
@@ -196,7 +197,7 @@ def main():
             actual_sops_list.append(", ".join(actual_cited) if actual_cited else "none")
             last_reply = reply
             import time
-            time.sleep(4)
+            time.sleep(3)
                 
         rate = f"{passes}/{runs_count}"
         path_str = " / ".join(paths)

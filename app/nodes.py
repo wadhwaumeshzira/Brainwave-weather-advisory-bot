@@ -22,9 +22,11 @@ ALL_SOPS = load_sops(os.environ.get("SOP_DIR", "sops"))
 ALL_SOP_IDS = [s["id"] for s in ALL_SOPS]
 ACTIVITIES_LIST = list(ACTIVITIES)
 
+from typing import Literal
+
 class Intent(BaseModel):
     location: str | None
-    activity: str
+    activity: Literal["cycling", "walking", "running", "driving", "picnic", "kids_outdoor", "elderly_outdoor", "pets", "commute", "general"]
     target_day: int
     in_scope: bool
 
