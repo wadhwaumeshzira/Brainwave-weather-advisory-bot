@@ -69,13 +69,14 @@ Activity mapping rules (only relevant when in_scope=True):
         parsed = llm.invoke(prompt, config={"callbacks": [tracker]})
         loc = parsed.location if parsed.location else state.get("last_location", "")
         act = parsed.activity if parsed.activity in ACTIVITIES else "general"
+        target_day = min(parsed.target_day, 1) # clamp to max 1 since we only fetch forecast_days=2
         
         used = {}
         used["parse_intent"] = "fallback" if tracker.failed else "primary"
         return {
             "last_location": loc,
             "last_activity": act,
-            "target_day": parsed.target_day,
+            "target_day": target_day,
             "out_of_scope": not parsed.in_scope,
             "llm_used": used,
             "error": ""
